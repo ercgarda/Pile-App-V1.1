@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pile Check</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #111;
+  color: #fff;
+  padding: 12px;
+  margin: 0;
+}
+
+input,
+select,
+button,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin: 5px 0;
+  font-size: 16px;
+  border-radius: 6px;
+  border: none;
+}
+
+input,
+select {
+  background: #222;
+  color: #fff;
+}
+
+button {
+  background: #2e7dff;
+  color: #fff;
+  font-weight: bold;
+}
+
+button.secondary {
+  background: #444;
+}
+
+button.danger {
+  background: #b3261e;
+}
+
+textarea {
+  height: 450px;
+  background: #1a1a1a;
+  color: #0f0;
+}
+
+h2,
+h3 {
+  margin-bottom: 8px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.topbar h2 {
+  margin: 0;
+}
+
+.settings-button {
+  width: auto;
+  padding: 10px 14px;
+  margin: 0;
+  background: #333;
+}
+
+.ref-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ref-row select {
+  flex: 1;
+}
+
+.loaded {
+  white-space: nowrap;
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.ref-card {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 6px 0 14px;
+}
+
+.ref-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ref-card th,
+.ref-card td {
+  padding: 5px 4px;
+  text-align: right;
+}
+
+.ref-card th:first-child,
+.ref-card td:first-child {
+  text-align: left;
+  width: 28px;
+}
+
+.ref-card th {
+  color: #aaa;
+  font-size: 13px;
+  font-weight: normal;
+}
+
+.bale-options {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin: 8px 0 4px;
+}
+
+.bale-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  background: #1a1a1a;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.bale-options input[type="radio"] {
+  width: auto;
+  margin: 0;
+  accent-color: #2e7dff;
+}
+
+input:disabled {
+  background: #333;
+  color: #888;
+  opacity: 0.55;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 20;
+  padding: 16px;
+  overflow: auto;
+}
+
+.modal.open {
+  display: block;
+}
+
+.modal-card {
+  max-width: 520px;
+  margin: 20px auto;
+  background: #171717;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.close-button {
+  width: auto;
+  background: #444;
+  padding: 8px 12px;
+}
+
+.reference-list {
+  margin: 12px 0;
+}
+
+.reference-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #222;
+  padding: 10px;
+  border-radius: 7px;
+  margin: 7px 0;
+}
+
+.reference-name {
+  font-weight: bold;
+  word-break: break-word;
+}
+
+.reference-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.reference-actions button {
+  width: auto;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.form-actions button {
+  margin: 0;
+}
+
+.hidden {
+  display: none;
+}
+
+.note {
+  color: #aaa;
+  font-size: 13px;
+  margin-top: 6px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <h2>Pile Check</h2>
+  <button class="settings-button" onclick="openSettings()">
+    ⚙ Settings
+  </button>
+</div>
+
+<h3>Reference Line</h3>
+
+<div class="ref-row">
+  <select id="ref" onchange="handleReferenceChange()"></select>
+  <span class="loaded">✓ Loaded</span>
+</div>
+
+<div class="ref-card">
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Northing</th>
+        <th>Easting</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>P</td>
+        <td id="pNorth">—</td>
+        <td id="pEast">—</td>
+      </tr>
+
+      <tr>
+        <td>M</td>
+        <td id="mNorth">—</td>
+        <td id="mEast">—</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Casing Parameters</h3>
+
+<input
+  id="casingLen"
+  inputmode="decimal"
+  placeholder="Casing length (m)"
+>
+
+<input
+  id="topCasingEL"
+  inputmode="decimal"
+  placeholder="Top of casing EL"
+>
+
+<h3>Lifting Bale</h3>
+
+<div
+  class="bale-options"
+  role="radiogroup"
+  aria-label="Lifting bale status"
+>
+  <label>
+    <input
+      type="radio"
+      name="baleStatus"
+      value="attached"
+      checked
+      onchange="updateBaleLengthState()"
+    >
+    Attached
+  </label>
+
+  <label>
+    <input
+      type="radio"
+      name="baleStatus"
+      value="detached"
+      onchange="updateBaleLengthState()"
+    >
+    Detached
+  </label>
+</div>
+
+<input
+  id="baleLen"
+  inputmode="decimal"
+  value="2"
+  placeholder="Lifting bale length (m)"
+  oninput="saveBaleLength()"
+>
+
+<h3>Top Center</h3>
+
+<input
+  id="Ty"
+  inputmode="decimal"
+  placeholder="Top Center Northing"
+>
+
+<input
+  id="Tx"
+  inputmode="decimal"
+  placeholder="Top Center Easting"
+>
+
+<input
+  id="Tz"
+  inputmode="decimal"
+  placeholder="Top Center Elevation"
+>
+
+<h3>Bottom Center</h3>
+
+<input
+  id="By"
+  inputmode="decimal"
+  placeholder="Bottom Center Northing"
+>
+
+<input
+  id="Bx"
+  inputmode="decimal"
+  placeholder="Bottom Center Easting"
+>
+
+<input
+  id="Bz"
+  inputmode="decimal"
+  placeholder="Bottom Center Elevation"
+>
+
+<button onclick="calculate()">
+  CALCULATE REPORT
+</button>
+
+<button onclick="copyReport()">
+  COPY REPORT
+</button>
+
+<textarea id="out" readonly></textarea>
+
+<div
+  id="settingsModal"
+  class="modal"
+  aria-hidden="true"
+>
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <h3>Reference Settings</h3>
+
+      <button
+        class="close-button"
+        onclick="closeSettings()"
+      >
+        Close
+      </button>
+    </div>
+
+    <div
+      id="referenceList"
+      class="reference-list"
+    ></div>
+
+    <button onclick="startAddReference()">
+      + ADD REFERENCE
+    </button>
+
+    <div
+      id="referenceForm"
+      class="hidden"
+    >
+      <h3 id="formTitle">
+        Add Reference
+      </h3>
+
+      <input
+        id="refName"
+        placeholder="Reference name"
+      >
+
+      <input
+        id="refPy"
+        inputmode="decimal"
+        placeholder="P Northing"
+      >
+
+      <input
+        id="refPx"
+        inputmode="decimal"
+        placeholder="P Easting"
+      >
+
+      <input
+        id="refMy"
+        inputmode="decimal"
+        placeholder="M Northing"
+      >
+
+      <input
+        id="refMx"
+        inputmode="decimal"
+        placeholder="M Easting"
+      >
+
+      <div class="form-actions">
+        <button onclick="saveReference()">
+          SAVE
+        </button>
+
+        <button
+          class="secondary"
+          onclick="cancelReferenceEdit()"
+        >
+          CANCEL
+        </button>
+      </div>
+
+      <div class="note">
+        Reference coordinates are saved on this device.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const defaultRefs = {
+  pp3: {
+    name: "PP3-Monopile",
+    Px: 482160.397,
+    Py: 5501705.766,
+    Mx: 482164.605,
+    My: 5501715.531
+  },
+
+  pp2: {
+    name: "PP2 - Pluto",
+    Px: 482105.814,
+    Py: 5501722.328,
+    Mx: 482098.388,
+    My: 5501672.874
+  }
+};
+
+let refs = loadReferences();
+let editingReferenceId = null;
+
+function loadReferences() {
+  try {
+    const saved = localStorage.getItem("pileCheckRefs");
+
+    if (saved) {
+      const parsed = JSON.parse(saved);
+
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        Object.keys(parsed).length
+      ) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error("Could not load references:", error);
+  }
+
+  return JSON.parse(JSON.stringify(defaultRefs));
+}
+
+function saveReferences() {
+  try {
+    localStorage.setItem(
+      "pileCheckRefs",
+      JSON.stringify(refs)
+    );
+  } catch (error) {
+    alert("References could not be saved on this device.");
+  }
+}
+
+function makeReferenceId() {
+  return (
+    "ref_" +
+    Date.now() +
+    "_" +
+    Math.random().toString(36).slice(2, 7)
+  );
+}
+
+function populateReferenceDropdown(preferredId) {
+  const select = document.getElementById("ref");
+
+  const last =
+    preferredId ||
+    localStorage.getItem("pileCheckLastRef");
+
+  select.innerHTML = "";
+
+  Object.entries(refs).forEach(([id, ref]) => {
+    const option = document.createElement("option");
+
+    option.value = id;
+    option.textContent = ref.name || id;
+
+    select.appendChild(option);
+  });
+
+  if (last && refs[last]) {
+    select.value = last;
+  } else if (select.options.length) {
+    select.selectedIndex = 0;
+  }
+
+  handleReferenceChange();
+}
+
+function handleReferenceChange() {
+  const id = document.getElementById("ref").value;
+
+  if (id) {
+    try {
+      localStorage.setItem(
+        "pileCheckLastRef",
+        id
+      );
+    } catch (error) {
+      console.error(
+        "Could not save selected reference:",
+        error
+      );
+    }
+  }
+
+  updateReferenceDisplay();
+}
+
+function updateReferenceDisplay() {
+  const id =
+    document.getElementById("ref").value;
+
+  const ref = refs[id];
+
+  if (!ref) {
+    document.getElementById("pNorth").textContent = "—";
+    document.getElementById("pEast").textContent = "—";
+    document.getElementById("mNorth").textContent = "—";
+    document.getElementById("mEast").textContent = "—";
+    return;
+  }
+
+  document.getElementById("pNorth").textContent =
+    Number(ref.Py).toFixed(3);
+
+  document.getElementById("pEast").textContent =
+    Number(ref.Px).toFixed(3);
+
+  document.getElementById("mNorth").textContent =
+    Number(ref.My).toFixed(3);
+
+  document.getElementById("mEast").textContent =
+    Number(ref.Mx).toFixed(3);
+}
+
+function openSettings() {
+  renderReferenceList();
+  cancelReferenceEdit();
+
+  const modal =
+    document.getElementById("settingsModal");
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeSettings() {
+  const modal =
+    document.getElementById("settingsModal");
+
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+
+  cancelReferenceEdit();
+}
+
+function renderReferenceList() {
+  const list =
+    document.getElementById("referenceList");
+
+  list.innerHTML = "";
+
+  Object.entries(refs).forEach(([id, ref]) => {
+    const item =
+      document.createElement("div");
+
+    item.className = "reference-item";
+
+    const name =
+      document.createElement("div");
+
+    name.className = "reference-name";
+    name.textContent = ref.name || id;
+
+    const actions =
+      document.createElement("div");
+
+    actions.className = "reference-actions";
+
+    const editButton =
+      document.createElement("button");
+
+    editButton.textContent = "Edit";
+    editButton.onclick = function() {
+      startEditReference(id);
+    };
+
+    const deleteButton =
+      document.createElement("button");
+
+    deleteButton.textContent = "Delete";
+    deleteButton.className = "danger";
+
+    deleteButton.onclick = function() {
+      deleteReference(id);
+    };
+
+    actions.append(
+      editButton,
+      deleteButton
+    );
+
+    item.append(
+      name,
+      actions
+    );
+
+    list.appendChild(item);
+  });
+}
+
+function startAddReference() {
+  editingReferenceId = null;
+
+  document.getElementById(
+    "formTitle"
+  ).textContent = "Add Reference";
+
+  document.getElementById("refName").value = "";
+  document.getElementById("refPy").value = "";
+  document.getElementById("refPx").value = "";
+  document.getElementById("refMy").value = "";
+  document.getElementById("refMx").value = "";
+
+  document.getElementById(
+    "referenceForm"
+  ).classList.remove("hidden");
+
+  document.getElementById("refName").focus();
+}
+
+function startEditReference(id) {
+  const ref = refs[id];
+
+  if (!ref) {
+    return;
+  }
+
+  editingReferenceId = id;
+
+  document.getElementById(
+    "formTitle"
+  ).textContent = "Edit Reference";
+
+  document.getElementById("refName").value =
+    ref.name || "";
+
+  document.getElementById("refPy").value =
+    ref.Py;
+
+  document.getElementById("refPx").value =
+    ref.Px;
+
+  document.getElementById("refMy").value =
+    ref.My;
+
+  document.getElementById("refMx").value =
+    ref.Mx;
+
+  document.getElementById(
+    "referenceForm"
+  ).classList.remove("hidden");
+
+  document.getElementById("refName").focus();
+}
+
+function cancelReferenceEdit() {
+  editingReferenceId = null;
+
+  document.getElementById(
+    "referenceForm"
+  ).classList.add("hidden");
+}
+
+function saveReference() {
+  const name =
+    document.getElementById(
+      "refName"
+    ).value.trim();
+
+  const Py = Number(
+    document.getElementById("refPy").value
+  );
+
+  const Px = Number(
+    document.getElementById("refPx").value
+  );
+
+  const My = Number(
+    document.getElementById("refMy").value
+  );
+
+  const Mx = Number(
+    document.getElementById("refMx").value
+  );
+
+  if (
+    !name ||
+    ![Py, Px, My, Mx].every(Number.isFinite)
+  ) {
+    alert(
+      "Enter a reference name and all four coordinates."
+    );
+    return;
+  }
+
+  if (Px === Mx && Py === My) {
+    alert(
+      "P and M cannot have the same coordinates."
+    );
+    return;
+  }
+
+  const id =
+    editingReferenceId ||
+    makeReferenceId();
+
+  refs[id] = {
+    name,
+    Px,
+    Py,
+    Mx,
+    My
+  };
+
+  saveReferences();
+  populateReferenceDropdown(id);
+  renderReferenceList();
+  cancelReferenceEdit();
+}
+
+function deleteReference(id) {
+  if (Object.keys(refs).length <= 1) {
+    alert(
+      "At least one reference must remain."
+    );
+    return;
+  }
+
+  const name =
+    refs[id]?.name || id;
+
+  const confirmed = confirm(
+    'Delete "' + name + '"?'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const selected =
+    document.getElementById("ref").value;
+
+  delete refs[id];
+
+  saveReferences();
+
+  const nextId =
+    selected === id
+      ? Object.keys(refs)[0]
+      : selected;
+
+  populateReferenceDropdown(nextId);
+  renderReferenceList();
+  cancelReferenceEdit();
+}
+
+function saveBaleLength() {
+  const value =
+    document.getElementById("baleLen").value;
+
+  try {
+    localStorage.setItem(
+      "pileCheckBaleLen",
+      value
+    );
+  } catch (error) {
+    console.error(
+      "Could not save bale length:",
+      error
+    );
+  }
+}
+
+function loadBaleLength() {
+  try {
+    const saved =
+      localStorage.getItem(
+        "pileCheckBaleLen"
+      );
+
+    if (saved !== null) {
+      document.getElementById(
+        "baleLen"
+      ).value = saved;
+    }
+  } catch (error) {
+    console.error(
+      "Could not load bale length:",
+      error
+    );
+  }
+}
+
+function n(id) {
+  const value =
+    document.getElementById(
+      id
+    ).value.trim();
+
+  return value === ""
+    ? NaN
+    : Number(value);
+}
+
+function mmToCmReport(v) {
+  const mm = Math.abs(v * 1000);
+
+  let cm = Math.floor(mm / 10);
+
+  if (mm % 10 >= 5) {
+    cm++;
+  }
+
+  return cm;
+}
+
+function calculate() {
+  const out =
+    document.getElementById("out");
+
+  try {
+    const ref =
+      refs[
+        document.getElementById(
+          "ref"
+        ).value
+      ];
+
+    if (!ref) {
+      out.value =
+        "ERROR: No reference selected";
+      return;
+    }
+
+    const Tx = n("Tx");
+    const Ty = n("Ty");
+    const Tz = n("Tz");
+
+    const Bx = n("Bx");
+    const By = n("By");
+    const Bz = n("Bz");
+
+    const topCasingEL =
+      n("topCasingEL");
+
+    const casingLen =
+      n("casingLen");
+
+    const baleStatus =
+      document.querySelector(
+        'input[name="baleStatus"]:checked'
+      ).value;
+
+    const baleLen =
+      n("baleLen");
+
+    const requiredValues = [
+      Tx,
+      Ty,
+      Tz,
+      Bx,
+      By,
+      Bz,
+      topCasingEL,
+      casingLen
+    ];
+
+    if (baleStatus === "attached") {
+      requiredValues.push(baleLen);
+    }
+
+    if (
+      requiredValues.some(
+        value => !Number.isFinite(value)
+      )
+    ) {
+      out.value =
+        "ERROR: Missing inputs";
+
+      return;
+    }
+
+    const shoeEL =
+      topCasingEL - casingLen;
+
+    // Measurements and projection vector.
+    // This preserves the working shoe projection.
+    const projectionDE =
+      Tx - Bx;
+
+    const projectionDN =
+      Ty - By;
+
+    const projectionDZ =
+      Tz - Bz;
+
+    const HD =
+      Math.hypot(
+        projectionDE,
+        projectionDN
+      );
+
+    const VD =
+      Math.abs(projectionDZ);
+
+    if (VD < 1e-9) {
+      out.value =
+        "ERROR: Top and bottom elevations cannot be equal";
+
+      return;
+    }
+
+    // Independent Leica-style inverse:
+    // Top Center to Bottom Center.
+    const azimuthDE =
+      Bx - Tx;
+
+    const azimuthDN =
+      By - Ty;
+
+    let az =
+      Math.atan2(
+        azimuthDE,
+        azimuthDN
+      ) *
+      180 /
+      Math.PI;
+
+    if (az < 0) {
+      az += 360;
+    }
+
+    const verticality =
+      HD / VD * 100;
+
+    const rE =
+      ref.Mx - ref.Px;
+
+    const rN =
+      ref.My - ref.Py;
+
+    const L =
+      Math.hypot(rE, rN);
+
+    if (L === 0) {
+      out.value =
+        "ERROR: Invalid reference";
+
+      return;
+    }
+
+    const uE =
+      rE / L;
+
+    const uN =
+      rN / L;
+
+    const pE =
+      uN;
+
+    const pN =
+      -uE;
+
+    function local(E, N) {
+      const e =
+        E - ref.Px;
+
+      const north =
+        N - ref.Py;
+
+      return {
+        station:
+          e * uE +
+          north * uN,
+
+        offset:
+          e * pE +
+          north * pN
+      };
+    }
+
+    const top =
+      local(Tx, Ty);
+
+    const bottom =
+      local(Bx, By);
+
+    const t =
+      (shoeEL - Bz) /
+      projectionDZ;
+
+    const shoeE =
+      Bx +
+      projectionDE * t;
+
+    const shoeN =
+      By +
+      projectionDN * t;
+
+    const shoe =
+      local(shoeE, shoeN);
+
+    function stationText(v) {
+      return (
+        mmToCmReport(v) +
+        " cm " +
+        (v >= 0 ? "IN" : "OUT")
+      );
+    }
+
+    function offsetText(v) {
+      return (
+        mmToCmReport(v) +
+        " cm " +
+        (v >= 0 ? "LEFT" : "RIGHT")
+      );
+    }
+
+    const baleLengthText =
+      Number.isInteger(baleLen)
+        ? baleLen.toFixed(0)
+        : baleLen
+            .toFixed(3)
+            .replace(/0+$/, "")
+            .replace(/\.$/, "");
+
+    const baleReportLine =
+      baleStatus === "attached"
+        ? baleLengthText +
+          "M LIFTING BALE ATTACHED"
+        : "LIFTING BALE DETACHED";
+
+    out.value =
+      "CASING ATTACHED\n" +
+      "ROTATOR STATIONARY\n" +
+      "------------------------------\n" +
+      baleReportLine +
+      "\n" +
+      casingLen.toFixed(3) +
+      " m total length\n" +
+      "------------------------------\n" +
+      "Top of casing " +
+      topCasingEL.toFixed(3) +
+      " mEL\n" +
+      "SHOE TEETH at " +
+      shoeEL.toFixed(3) +
+      "mEL\n" +
+      "=================\n" +
+      "Inverse top over bottom\n" +
+      "HD = " +
+      Math.round(HD * 1000) +
+      " mm\n" +
+      "VD = " +
+      Math.round(VD * 1000) +
+      " mm\n" +
+      "AZ = " +
+      Math.round(az) +
+      "°\n" +
+      verticality.toFixed(2) +
+      "% Verticality\n" +
+      "================\n" +
+      "Top shot at " +
+      Tz.toFixed(2) +
+      " mEL\n" +
+      stationText(top.station) +
+      "\n" +
+      offsetText(top.offset) +
+      "\n\n" +
+      "Bottom shot at " +
+      Bz.toFixed(2) +
+      " mEL\n" +
+      stationText(bottom.station) +
+      "\n" +
+      offsetText(bottom.offset) +
+      "\n\n" +
+      "Projected teeth at " +
+      shoeEL.toFixed(3) +
+      "mEL\n" +
+      stationText(shoe.station) +
+      "\n" +
+      offsetText(shoe.offset);
+
+  } catch (error) {
+    out.value =
+      "ERROR: " + error.message;
+  }
+}
+
+function updateBaleLengthState() {
+  const attached =
+    document.querySelector(
+      'input[name="baleStatus"]:checked'
+    ).value === "attached";
+
+  const input =
+    document.getElementById("baleLen");
+
+  input.disabled = !attached;
+
+  input.style.opacity =
+    attached ? "1" : "0.5";
+}
+
+function copyReport() {
+  const out =
+    document.getElementById("out");
+
+  if (!out.value) {
+    alert("Nothing to copy");
+    return;
+  }
+
+  function fallback() {
+    out.removeAttribute("readonly");
+
+    out.focus();
+    out.select();
+
+    out.setSelectionRange(
+      0,
+      out.value.length
+    );
+
+    try {
+      document.execCommand("copy");
+      alert("Report copied");
+    } catch (error) {
+      alert(
+        "Copy failed. Long-press the report and choose Copy."
+      );
+    }
+
+    out.setAttribute(
+      "readonly",
+      ""
+    );
+  }
+
+  if (
+    navigator.clipboard &&
+    window.isSecureContext
+  ) {
+    navigator.clipboard
+      .writeText(out.value)
+      .then(function() {
+        alert("Report copied");
+      })
+      .catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+loadBaleLength();
+populateReferenceDropdown();
+updateBaleLengthState();
+</script>
+
+</body>
+</html>
