@@ -278,6 +278,10 @@ input:disabled {
   accent-color: #2e7dff;
 }
 
+
+.elevation-input-row { display:flex; align-items:center; gap:6px; }
+.elevation-input-row input { flex:1; width:auto; }
+.elevation-sign-button { width:48px; min-width:48px; margin:5px 0; padding:10px 0; font-size:20px; }
 </style>
 </head>
 
@@ -331,11 +335,14 @@ input:disabled {
   placeholder="Casing length (m)"
 >
 
-<input
-  id="topCasingEL"
-  inputmode="decimal"
-  placeholder="Top of casing EL"
->
+<div class="elevation-input-row">
+  <input
+    id="topCasingEL"
+    inputmode="decimal"
+    placeholder="Top of casing EL"
+  >
+  <button type="button" class="elevation-sign-button" onclick="toggleSign('topCasingEL')">±</button>
+</div>
 
 <h3>Lifting Bale</h3>
 
@@ -388,11 +395,14 @@ input:disabled {
   placeholder="Top Center Easting"
 >
 
-<input
-  id="Tz"
-  inputmode="decimal"
-  placeholder="Top Center Elevation"
->
+<div class="elevation-input-row">
+  <input
+    id="Tz"
+    inputmode="decimal"
+    placeholder="Top Center Elevation"
+  >
+  <button type="button" class="elevation-sign-button" onclick="toggleSign('Tz')">±</button>
+</div>
 
 <h3>Bottom Center</h3>
 
@@ -408,11 +418,14 @@ input:disabled {
   placeholder="Bottom Center Easting"
 >
 
-<input
-  id="Bz"
-  inputmode="decimal"
-  placeholder="Bottom Center Elevation"
->
+<div class="elevation-input-row">
+  <input
+    id="Bz"
+    inputmode="decimal"
+    placeholder="Bottom Center Elevation"
+  >
+  <button type="button" class="elevation-sign-button" onclick="toggleSign('Bz')">±</button>
+</div>
 
 <div class="report-action-row">
   <button onclick="calculate()">
@@ -961,6 +974,15 @@ function loadBaleLength() {
   }
 }
 
+
+function toggleSign(inputId) {
+  const input = document.getElementById(inputId);
+  const value = input.value.trim();
+  if (value.startsWith("-")) input.value = value.slice(1);
+  else if (value !== "") input.value = "-" + value;
+  else input.value = "-";
+  input.focus();
+}
 
 function getReportUnits() {
   const selected = document.querySelector(
