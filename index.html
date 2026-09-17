@@ -243,23 +243,39 @@ input:disabled {
   margin-top: 6px;
 }
 
-.elevation-input-row {
+.report-action-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  margin-top: 5px;
 }
-
-.elevation-input-row input {
+.report-action-row > button {
   flex: 1;
-  width: auto;
+  margin: 0;
 }
-
-.elevation-sign-button {
-  width: 48px;
-  min-width: 48px;
-  margin: 5px 0;
-  padding: 10px 0;
-  font-size: 20px;
+.report-units {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  background: #1a1a1a;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+.report-units span {
+  color: #aaa;
+  font-size: 13px;
+}
+.report-units label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+.report-units input[type="radio"] {
+  width: auto;
+  margin: 0;
+  accent-color: #2e7dff;
 }
 
 </style>
@@ -315,19 +331,11 @@ input:disabled {
   placeholder="Casing length (m)"
 >
 
-<div class="elevation-input-row">
-  <input
-    id="topCasingEL"
-    inputmode="decimal"
-    placeholder="Top of casing EL"
-  >
-  <button
-    type="button"
-    class="elevation-sign-button"
-    onclick="toggleSign('topCasingEL')"
-    aria-label="Toggle top of casing elevation sign"
-  >±</button>
-</div>
+<input
+  id="topCasingEL"
+  inputmode="decimal"
+  placeholder="Top of casing EL"
+>
 
 <h3>Lifting Bale</h3>
 
@@ -380,19 +388,11 @@ input:disabled {
   placeholder="Top Center Easting"
 >
 
-<div class="elevation-input-row">
-  <input
-    id="Tz"
-    inputmode="decimal"
-    placeholder="Top Center Elevation"
-  >
-  <button
-    type="button"
-    class="elevation-sign-button"
-    onclick="toggleSign('Tz')"
-    aria-label="Toggle top center elevation sign"
-  >±</button>
-</div>
+<input
+  id="Tz"
+  inputmode="decimal"
+  placeholder="Top Center Elevation"
+>
 
 <h3>Bottom Center</h3>
 
@@ -408,23 +408,42 @@ input:disabled {
   placeholder="Bottom Center Easting"
 >
 
-<div class="elevation-input-row">
-  <input
-    id="Bz"
-    inputmode="decimal"
-    placeholder="Bottom Center Elevation"
-  >
-  <button
-    type="button"
-    class="elevation-sign-button"
-    onclick="toggleSign('Bz')"
-    aria-label="Toggle bottom center elevation sign"
-  >±</button>
-</div>
+<input
+  id="Bz"
+  inputmode="decimal"
+  placeholder="Bottom Center Elevation"
+>
 
-<button onclick="calculate()">
-  CALCULATE REPORT
-</button>
+<div class="report-action-row">
+  <button onclick="calculate()">
+    CALCULATE REPORT
+  </button>
+
+  <div class="report-units" role="radiogroup" aria-label="Report units">
+    <span>Units:</span>
+
+    <label>
+      <input
+        type="radio"
+        name="reportUnits"
+        value="cm"
+        checked
+        onchange="changeReportUnits()"
+      >
+      cm
+    </label>
+
+    <label>
+      <input
+        type="radio"
+        name="reportUnits"
+        value="mm"
+        onchange="changeReportUnits()"
+      >
+      mm
+    </label>
+  </div>
+</div>
 
 <button onclick="copyReport()">
   COPY REPORT
@@ -537,6 +556,7 @@ const defaultRefs = {
 
 let refs = loadReferences();
 let editingReferenceId = null;
+let lastReportData = null;
 
 function loadReferences() {
   try {
@@ -625,6 +645,24 @@ function handleReferenceChange() {
   }
 
   updateReferenceDisplay();
+  prefillCentersFromReference();
+}
+
+function prefillCentersFromReference() {
+  const id = document.getElementById("ref").value;
+  const ref = refs[id];
+
+  if (!ref) {
+    return;
+  }
+
+  // P is used only as a starting value for data entry.
+  // These remain normal, fully editable inputs and do not
+  // change the saved reference itself.
+  document.getElementById("Ty").value = Number(ref.Py).toFixed(3);
+  document.getElementById("Tx").value = Number(ref.Px).toFixed(3);
+  document.getElementById("By").value = Number(ref.Py).toFixed(3);
+  document.getElementById("Bx").value = Number(ref.Px).toFixed(3);
 }
 
 function updateReferenceDisplay() {
@@ -924,19 +962,141 @@ function loadBaleLength() {
 }
 
 
-function toggleSign(inputId) {
-  const input = document.getElementById(inputId);
-  const value = input.value.trim();
+function getReportUnits() {
+  const selected = document.querySelector(
+    'input[name="reportUnits"]:checked'
+  );
+  return selected ? selected.value : "cm";
+}
 
-  if (value.startsWith("-")) {
-    input.value = value.slice(1);
-  } else if (value !== "") {
-    input.value = "-" + value;
-  } else {
-    input.value = "-";
+function saveReportUnits() {
+  try {
+    localStorage.setItem(
+      "pileCheckReportUnits",
+      getReportUnits()
+    );
+  } catch (error) {
+    console.error("Could not save report units:", error);
+  }
+}
+
+function loadReportUnits() {
+  try {
+    const saved = localStorage.getItem("pileCheckReportUnits");
+
+    if (saved === "mm" || saved === "cm") {
+      const radio = document.querySelector(
+        'input[name="reportUnits"][value="' + saved + '"]'
+      );
+
+      if (radio) {
+        radio.checked = true;
+      }
+    }
+  } catch (error) {
+    console.error("Could not load report units:", error);
+  }
+}
+
+function changeReportUnits() {
+  saveReportUnits();
+
+  if (lastReportData) {
+    renderReport(lastReportData);
+  }
+}
+
+function reportDistanceText(value, positiveText, negativeText) {
+  const direction = value >= 0 ? positiveText : negativeText;
+
+  if (getReportUnits() === "mm") {
+    return (
+      Math.round(Math.abs(value) * 1000) +
+      " mm " +
+      direction
+    );
   }
 
-  input.focus();
+  return (
+    mmToCmReport(value) +
+    " cm " +
+    direction
+  );
+}
+
+function renderReport(data) {
+  const out = document.getElementById("out");
+
+  function stationText(v) {
+    return reportDistanceText(v, "IN", "OUT");
+  }
+
+  function offsetText(v) {
+    return reportDistanceText(v, "LEFT", "RIGHT");
+  }
+
+  const baleLengthText =
+    Number.isInteger(data.baleLen)
+      ? data.baleLen.toFixed(0)
+      : data.baleLen
+          .toFixed(3)
+          .replace(/0+$/, "")
+          .replace(/\.$/, "");
+
+  const baleReportLine =
+    data.baleStatus === "attached"
+      ? baleLengthText + "M LIFTING BALE ATTACHED"
+      : "LIFTING BALE DETACHED";
+
+  out.value =
+    "CASING ATTACHED\n" +
+    "ROTATOR STATIONARY\n" +
+    "------------------------------\n" +
+    baleReportLine +
+    "\n" +
+    data.casingLen.toFixed(3) +
+    " m total length\n" +
+    "------------------------------\n" +
+    "Top of casing " +
+    data.topCasingEL.toFixed(3) +
+    " mEL\n" +
+    "SHOE TEETH at " +
+    data.shoeEL.toFixed(3) +
+    "mEL\n" +
+    "=================\n" +
+    "Inverse top over bottom\n" +
+    "HD = " +
+    Math.round(data.HD * 1000) +
+    " mm\n" +
+    "VD = " +
+    Math.round(data.VD * 1000) +
+    " mm\n" +
+    "AZ = " +
+    Math.round(data.az) +
+    "°\n" +
+    data.verticality.toFixed(2) +
+    "% Verticality\n" +
+    "================\n" +
+    "Top shot at " +
+    data.Tz.toFixed(2) +
+    " mEL\n" +
+    stationText(data.top.station) +
+    "\n" +
+    offsetText(data.top.offset) +
+    "\n\n" +
+    "Bottom shot at " +
+    data.Bz.toFixed(2) +
+    " mEL\n" +
+    stationText(data.bottom.station) +
+    "\n" +
+    offsetText(data.bottom.offset) +
+    "\n\n" +
+    "Projected teeth at " +
+    data.shoeEL.toFixed(3) +
+    "mEL\n" +
+    stationText(data.shoe.station) +
+    "\n" +
+    offsetText(data.shoe.offset);
 }
 
 function n(id) {
@@ -1148,85 +1308,24 @@ function calculate() {
     const shoe =
       local(shoeE, shoeN);
 
-    function stationText(v) {
-      return (
-        mmToCmReport(v) +
-        " cm " +
-        (v >= 0 ? "IN" : "OUT")
-      );
-    }
+    lastReportData = {
+      baleStatus,
+      baleLen,
+      casingLen,
+      topCasingEL,
+      shoeEL,
+      HD,
+      VD,
+      az,
+      verticality,
+      Tz,
+      Bz,
+      top,
+      bottom,
+      shoe
+    };
 
-    function offsetText(v) {
-      return (
-        mmToCmReport(v) +
-        " cm " +
-        (v >= 0 ? "LEFT" : "RIGHT")
-      );
-    }
-
-    const baleLengthText =
-      Number.isInteger(baleLen)
-        ? baleLen.toFixed(0)
-        : baleLen
-            .toFixed(3)
-            .replace(/0+$/, "")
-            .replace(/\.$/, "");
-
-    const baleReportLine =
-      baleStatus === "attached"
-        ? baleLengthText +
-          "M LIFTING BALE ATTACHED"
-        : "LIFTING BALE DETACHED";
-
-    out.value =
-      "CASING ATTACHED\n" +
-      "ROTATOR STATIONARY\n" +
-      "------------------------------\n" +
-      baleReportLine +
-      "\n" +
-      casingLen.toFixed(3) +
-      " m total length\n" +
-      "------------------------------\n" +
-      "Top of casing " +
-      topCasingEL.toFixed(3) +
-      " mEL\n" +
-      "SHOE TEETH at " +
-      shoeEL.toFixed(3) +
-      "mEL\n" +
-      "=================\n" +
-      "Inverse top over bottom\n" +
-      "HD = " +
-      Math.round(HD * 1000) +
-      " mm\n" +
-      "VD = " +
-      Math.round(VD * 1000) +
-      " mm\n" +
-      "AZ = " +
-      Math.round(az) +
-      "°\n" +
-      verticality.toFixed(2) +
-      "% Verticality\n" +
-      "================\n" +
-      "Top shot at " +
-      Tz.toFixed(2) +
-      " mEL\n" +
-      stationText(top.station) +
-      "\n" +
-      offsetText(top.offset) +
-      "\n\n" +
-      "Bottom shot at " +
-      Bz.toFixed(2) +
-      " mEL\n" +
-      stationText(bottom.station) +
-      "\n" +
-      offsetText(bottom.offset) +
-      "\n\n" +
-      "Projected teeth at " +
-      shoeEL.toFixed(3) +
-      "mEL\n" +
-      stationText(shoe.station) +
-      "\n" +
-      offsetText(shoe.offset);
+    renderReport(lastReportData);
 
   } catch (error) {
     out.value =
@@ -1300,6 +1399,7 @@ function copyReport() {
 }
 
 loadBaleLength();
+loadReportUnits();
 populateReferenceDropdown();
 updateBaleLengthState();
 </script>
